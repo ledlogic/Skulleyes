@@ -30,8 +30,14 @@
 
 Adafruit_8x8matrix matrix = Adafruit_8x8matrix();
 
+// Pin 13 has an LED connected on most Arduino boards.
+// give it a name:
+int led = 12;
+
 void setup() {
   Serial.begin(9600);
+  
+  pinMode(led, OUTPUT); 
 
   randomSeed(analogRead(0));
 
@@ -192,6 +198,22 @@ void eyesClock() {
   eyesDraw(eye_off);
 }
 
+/*
+void eyesTalk() {
+  eyesDraw(eye_off);
+  eyesDraw(eye_center);
+
+  int choice = random(20,40);
+  for (int i=0; i<choice; i++) {
+    digitalWrite(led, HIGH);
+    delay(random(100, 300));
+    digitalWrite(led, LOW);
+    delay(random(100, 300));
+  }
+
+  eyesDraw(eye_off);
+}
+*/
 
 void loop() {
   int choice = random(4);
@@ -208,6 +230,9 @@ void loop() {
     case 3:
       eyesClock();
       break;
+    //case 4: 
+    //  eyesTalk();
+    //  break;
     default:
       ;
   }
