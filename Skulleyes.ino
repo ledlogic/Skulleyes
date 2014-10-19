@@ -32,12 +32,14 @@ Adafruit_8x8matrix matrix = Adafruit_8x8matrix();
 
 // Pin 13 has an LED connected on most Arduino boards.
 // give it a name:
-int led = 12;
+//int led = 12;
+
+int wait = 500;
 
 void setup() {
   Serial.begin(9600);
   
-  pinMode(led, OUTPUT); 
+  //pinMode(led, OUTPUT); 
 
   randomSeed(analogRead(0));
 
@@ -155,18 +157,28 @@ void eyesDraw(const uint8_t *bitmap) {
 }
 
 void eyesWait() {
-  delay(random(250, 750));
+  delay(wait);
+}
+
+void eyesRandomWait() {
+  delay(random(1000, 6000));
 }
 
 void eyesUp() {
+  wait = 500;
+  
   eyesDraw(eye_off);
   eyesDraw(eye_up_left);
   eyesDraw(eye_up_center);
   eyesDraw(eye_up_right);
+  eyesDraw(eye_up_center);
+  eyesDraw(eye_up_left);
   eyesDraw(eye_off);
 }
 
 void eyesMiddle() {
+  wait = 500;
+  
   eyesDraw(eye_off);
   eyesDraw(eye_left);
   eyesDraw(eye_center);
@@ -177,14 +189,20 @@ void eyesMiddle() {
 }
 
 void eyesDown() {
+  wait = 500;
+  
   eyesDraw(eye_off);
   eyesDraw(eye_down_left);
   eyesDraw(eye_down_center);
   eyesDraw(eye_down_right);
+  eyesDraw(eye_down_center);
+  eyesDraw(eye_down_left);
   eyesDraw(eye_off);
 }
 
 void eyesClock() {
+  wait = 200;
+  
   eyesDraw(eye_off);
   eyesDraw(eye_up_center);
   eyesDraw(eye_up_right);
@@ -236,4 +254,5 @@ void loop() {
     default:
       ;
   }
+  eyesRandomWait();
 }
