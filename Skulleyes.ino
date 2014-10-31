@@ -20,31 +20,22 @@
 
   Modified 2014 by Jeff D. Conrad as skulleyes project.
   * Controls two 8x8 eyes.
+  * Plays sounds (commented out).
+  * Might need to remove functionality from sound library to work - mp3 etc.
 
   http://ledlogic.blogspot.com/2014/10/arduino-8x8-shields.html
  ****************************************************/
 
+#include <SD.h>
+#include <SPI.h>
+#include <MusicPlayer.h>
 #include <Wire.h>
-#include "Adafruit_LEDBackpack.h"
-#include "Adafruit_GFX.h"
+#include <Adafruit_LEDBackpack.h>
+#include <Adafruit_GFX.h>
 
 Adafruit_8x8matrix matrix = Adafruit_8x8matrix();
 
-// Pin 13 has an LED connected on most Arduino boards.
-// give it a name:
-//int led = 12;
-
-int wait = 500;
-
-void setup() {
-  Serial.begin(9600);
-  
-  //pinMode(led, OUTPUT); 
-
-  randomSeed(analogRead(0));
-
-  matrix.begin(0x70);  // pass in the address
-}
+const int wait = 500;
 
 static const uint8_t PROGMEM
 eye_off[] =
@@ -147,63 +138,75 @@ eye_down_right[] =
   B01111110,
   B00111100
 };
-;
+
+static char* soundFiles[] = {
+  "BOOLEAN.mp3",
+  "DYLNSCRY.mp3",
+  "GHOSTMCH.mp3",
+  "HASKULL.mp3",
+  "ICDEADCD.mp3",
+
+  "JSTNSCAP.mp3",
+  "MNSTERHM.mp3",
+  "NOBODY.mp3",
+  "PUMPKNPI.mp3",
+  "SPIRITS.mp3",
+
+  "TOBNOTB.mp3",
+  "TRVRSCRY.mp3",
+  "UNLBYTES.mp3",
+  "WWW.mp3",
+  "YEARBOO.mp3",
+
+  "TRVRSCRY.mp3"
+};
+
+void setup() {
+  Serial.begin(9600);
+
+  player.begin();
+  player.setVolume(MAXVOL);
+
+  randomSeed(analogRead(0));
+  matrix.begin(0x70);
+}
+
+void eyesWait(int minWait, int maxWait) {
+  delay(random(minWait, maxWait));
+}
 
 void eyesDraw(const uint8_t *bitmap) {
   matrix.clear();
   matrix.drawBitmap(0, 0, bitmap, 8, 8, LED_ON);
   matrix.writeDisplay();
-  eyesWait();
-}
-
-void eyesWait() {
-  delay(wait);
-}
-
-void eyesRandomWait() {
-  delay(random(1000, 6000));
+  eyesWait(wait, wait);
 }
 
 void eyesUp() {
-  wait = 500;
-  
-  eyesDraw(eye_off);
   eyesDraw(eye_up_left);
   eyesDraw(eye_up_center);
   eyesDraw(eye_up_right);
   eyesDraw(eye_up_center);
   eyesDraw(eye_up_left);
-  eyesDraw(eye_off);
 }
 
 void eyesMiddle() {
-  wait = 500;
-  
-  eyesDraw(eye_off);
   eyesDraw(eye_left);
   eyesDraw(eye_center);
   eyesDraw(eye_right);
   eyesDraw(eye_center);
   eyesDraw(eye_left);
-  eyesDraw(eye_off);
 }
 
 void eyesDown() {
-  wait = 500;
-  
-  eyesDraw(eye_off);
   eyesDraw(eye_down_left);
   eyesDraw(eye_down_center);
   eyesDraw(eye_down_right);
   eyesDraw(eye_down_center);
   eyesDraw(eye_down_left);
-  eyesDraw(eye_off);
 }
 
 void eyesClock() {
-  wait = 200;
-  
-  eyesDraw(eye_off);
   eyesDraw(eye_up_center);
   eyesDraw(eye_up_right);
   eyesDraw(eye_right);
@@ -213,28 +216,24 @@ void eyesClock() {
   eyesDraw(eye_left);
   eyesDraw(eye_up_left);
   eyesDraw(eye_up_center);
-  eyesDraw(eye_off);
 }
 
-/*
 void eyesTalk() {
-  eyesDraw(eye_off);
-  eyesDraw(eye_center);
-
-  int choice = random(20,40);
-  for (int i=0; i<choice; i++) {
-    digitalWrite(led, HIGH);
-    delay(random(100, 300));
-    digitalWrite(led, LOW);
-    delay(random(100, 300));
+  int choice = random(16);
+  char* fn = soundFiles[choice];
+  player.playOne(fn);
+  for (int i = 0; i < 4; i++) {
+    eyesDraw(eye_off);
+    eyesDraw(eye_center);
+    eyesWait(100, 300);
   }
-
-  eyesDraw(eye_off);
+  //player.play();
 }
-*/
 
 void loop() {
-  int choice = random(4);
+  eyesDraw(eye_off);
+  //int choice = random(4);
+  int choice = random(3);
   switch (choice) {
     case 0:
       eyesUp();
@@ -248,11 +247,9 @@ void loop() {
     case 3:
       eyesClock();
       break;
-    //case 4: 
+    //case 4:
     //  eyesTalk();
     //  break;
-    default:
-      ;
   }
-  eyesRandomWait();
+  eyesDraw(eye_off);
 }
