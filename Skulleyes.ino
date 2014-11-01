@@ -28,12 +28,15 @@
 
 #include <SD.h>
 #include <SPI.h>
-#include <MusicPlayer.h>
 #include <Wire.h>
-#include <Adafruit_LEDBackpack.h>
-#include <Adafruit_GFX.h>
+#include <SkulleyesMusicPlayer.h>
+#include <Skulleyes_LEDBackpack.h>
+#include <Skulleyes_GFX.h>
 
-Adafruit_8x8matrix matrix = Adafruit_8x8matrix();
+Skulleyes_8x8matrix matrix = Skulleyes_8x8matrix();
+
+boolean playMode = false;
+boolean played = false;
 
 const int wait = 500;
 
@@ -163,10 +166,8 @@ static char* soundFiles[] = {
 
 void setup() {
   Serial.begin(9600);
-
   player.begin();
-  player.setVolume(MAXVOL);
-
+  player.setVolume(80);
   randomSeed(analogRead(0));
   matrix.begin(0x70);
 }
@@ -183,11 +184,13 @@ void eyesDraw(const uint8_t *bitmap) {
 }
 
 void eyesUp() {
+  eyesDraw(eye_off);
   eyesDraw(eye_up_left);
   eyesDraw(eye_up_center);
   eyesDraw(eye_up_right);
   eyesDraw(eye_up_center);
   eyesDraw(eye_up_left);
+  eyesDraw(eye_off);
 }
 
 void eyesMiddle() {
@@ -199,14 +202,17 @@ void eyesMiddle() {
 }
 
 void eyesDown() {
+  eyesDraw(eye_off);
   eyesDraw(eye_down_left);
   eyesDraw(eye_down_center);
   eyesDraw(eye_down_right);
   eyesDraw(eye_down_center);
   eyesDraw(eye_down_left);
+  eyesDraw(eye_off);
 }
 
 void eyesClock() {
+  eyesDraw(eye_off);
   eyesDraw(eye_up_center);
   eyesDraw(eye_up_right);
   eyesDraw(eye_right);
@@ -216,23 +222,19 @@ void eyesClock() {
   eyesDraw(eye_left);
   eyesDraw(eye_up_left);
   eyesDraw(eye_up_center);
+  eyesDraw(eye_off);
 }
 
 void eyesTalk() {
-  int choice = random(16);
+  int choice = random(15);
   char* fn = soundFiles[choice];
+  Serial.println("Playing choice[" + String(choice) + "], fn[" + String(fn) + "]");
   player.playOne(fn);
-  for (int i = 0; i < 4; i++) {
-    eyesDraw(eye_off);
-    eyesDraw(eye_center);
-    eyesWait(100, 300);
-  }
-  //player.play();
+  playMode = true;
+  played = false;
 }
 
-void loop() {
-  eyesDraw(eye_off);
-  //int choice = random(4);
+void eyesRandom() {
   int choice = random(3);
   switch (choice) {
     case 0:
@@ -247,9 +249,25 @@ void loop() {
     case 3:
       eyesClock();
       break;
-    //case 4:
-    //  eyesTalk();
-    //  break;
   }
-  eyesDraw(eye_off);
+}
+
+void loop() {
+  String state = player.getPlayingState();
+  if (playMode) {
+    if (played && state != "1" && state != "3") {
+      Serial.println("was playing but do not think so now, state[" + state + "]");
+      playMode = false;
+      eyesRandom();
+      eyesWait(1000,1000);
+    } else {
+      Serial.println("playing");
+      played = true;
+      player.play();
+    }
+    return;
+  }
+  
+  eyesTalk();
+  eyesWait(1000,1000);
 }
