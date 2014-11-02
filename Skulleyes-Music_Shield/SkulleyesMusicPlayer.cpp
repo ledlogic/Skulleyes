@@ -342,22 +342,6 @@ void SkulleyesMusicPlayer::_play(void)
   }
 }
 
-void SkulleyesMusicPlayer::playOne(char *songFile)
-{
-  SdFile f;
-  if (!f.open(&root, songFile, O_READ))
-  {
-    Serial.print(songFile);
-    showString(PSTR(" does not exists.\r\n"));
-    return;
-  }
-  f.close();
-  if (!_inPlayList(root.dirIndex( )))
-  {
-    addToPlaylist(songFile);
-  }
-}
-
 boolean SkulleyesMusicPlayer::_addToPlaylist(uint16_t index, char *songName) //add a song to current playlist
 {
   if (spl.songTotalNum >= (MAX_SONG_TOTAL_NUM - 1)) return false;
@@ -487,4 +471,26 @@ boolean SkulleyesMusicPlayer::isIdle(void)
 String SkulleyesMusicPlayer::getPlayingState(void)
 {
 	return String(playingState);
+}
+
+void SkulleyesMusicPlayer::playOne(char *songFile)
+{
+  playlistInit();
+  
+  SdFile f;
+  if (!f.open(&root, songFile, O_READ))
+  {
+    Serial.print(songFile);
+    showString(PSTR(" does not exists.\r\n"));
+    return;
+  }
+  f.close();
+  if (!_inPlayList(root.dirIndex( )))
+  {
+    addToPlaylist(songFile);
+    
+    // added for skulleyes
+    _playmode = PM_NORMAL_PLAY;
+  	playingState = PS_PRE_PLAY;
+  }
 }
