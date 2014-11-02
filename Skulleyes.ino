@@ -35,10 +35,18 @@
 
 Skulleyes_8x8matrix matrix = Skulleyes_8x8matrix();
 
-boolean playMode = false;
-boolean played = false;
+const boolean eyeDbg = false;
+boolean talkMode = false;
+boolean talkPlayed = false;
+int talkModeChecked = 0;
 
-const int wait = 500;
+int lastTalkChoice = -1;
+int lastTalk = -1;
+
+const int wait_eyes = 128;
+const int wait_events = 1024;
+int wait_events_multiplier = 5;
+int wait_talk = -1;
 
 static const uint8_t PROGMEM
 eye_off[] =
@@ -149,18 +157,15 @@ static char* soundFiles[] = {
   "HASKULL.mp3",
   "ICDEADCD.mp3",
 
-  "JSTNSCAP.mp3",
   "MNSTERHM.mp3",
   "NOBODY.mp3",
   "PUMPKNPI.mp3",
   "SPIRITS.mp3",
-
   "TOBNOTB.mp3",
+
   "TRVRSCRY.mp3",
   "UNLBYTES.mp3",
   "WWW.mp3",
-  "YEARBOO.mp3",
-
   "TRVRSCRY.mp3"
 };
 
@@ -172,104 +177,162 @@ void setup() {
   matrix.begin(0x70);
 }
 
+void eyesOff(void) {
+  eyesDraw(eye_off, 0, 0);
+}
+
+void eyesDrawDelayOff(void) {
+  eyesDrawDelay(eye_off);
+}
+
 void eyesWait(int minWait, int maxWait) {
   delay(random(minWait, maxWait));
 }
 
-void eyesDraw(const uint8_t *bitmap) {
+void eyesDraw(const uint8_t *bitmap, int minWait, int maxWait) {
   matrix.clear();
   matrix.drawBitmap(0, 0, bitmap, 8, 8, LED_ON);
   matrix.writeDisplay();
-  eyesWait(wait, wait);
+  
+  if (maxWait > 0) {
+    eyesWait(minWait, maxWait);
+  }
 }
 
-void eyesUp() {
-  eyesDraw(eye_off);
-  eyesDraw(eye_up_left);
-  eyesDraw(eye_up_center);
-  eyesDraw(eye_up_right);
-  eyesDraw(eye_up_center);
-  eyesDraw(eye_up_left);
-  eyesDraw(eye_off);
+void eyesDrawDelay(const uint8_t *bitmap) {
+  eyesDraw(bitmap, wait_eyes, wait_eyes);
 }
 
-void eyesMiddle() {
-  eyesDraw(eye_off);
-  eyesDraw(eye_left);
-  eyesDraw(eye_center);
-  eyesDraw(eye_right);
-  eyesDraw(eye_center);
-  eyesDraw(eye_left);
-  eyesDraw(eye_off);
+void eyesChoiceUp() {
+  eyesDrawDelayOff();
+  eyesDrawDelay(eye_up_left);
+  eyesDrawDelay(eye_up_center);
+  eyesDrawDelay(eye_up_right);
+  eyesDrawDelay(eye_up_center);
+  eyesDrawDelay(eye_up_left);
+  eyesDrawDelayOff();
 }
 
-void eyesDown() {
-  eyesDraw(eye_off);
-  eyesDraw(eye_down_left);
-  eyesDraw(eye_down_center);
-  eyesDraw(eye_down_right);
-  eyesDraw(eye_down_center);
-  eyesDraw(eye_down_left);
-  eyesDraw(eye_off);
+void eyesChoiceMiddle() {
+  eyesDrawDelayOff();
+  eyesDrawDelay(eye_left);
+  eyesDrawDelay(eye_center);
+  eyesDrawDelay(eye_right);
+  eyesDrawDelay(eye_center);
+  eyesDrawDelay(eye_left);
+  eyesDrawDelayOff();
 }
 
-void eyesClock() {
-  eyesDraw(eye_off);
-  eyesDraw(eye_up_center);
-  eyesDraw(eye_up_right);
-  eyesDraw(eye_right);
-  eyesDraw(eye_down_right);
-  eyesDraw(eye_down_center);
-  eyesDraw(eye_down_left);
-  eyesDraw(eye_left);
-  eyesDraw(eye_up_left);
-  eyesDraw(eye_up_center);
-  eyesDraw(eye_off);
+void eyesChoiceDown() {
+  eyesDrawDelayOff();
+  eyesDrawDelay(eye_down_left);
+  eyesDrawDelay(eye_down_center);
+  eyesDrawDelay(eye_down_right);
+  eyesDrawDelay(eye_down_center);
+  eyesDrawDelay(eye_down_left);
+  eyesDrawDelayOff();
 }
 
-void eyesTalk() {
-  int choice = random(15);
-  char* fn = soundFiles[choice];
-  Serial.println("Playing choice[" + String(choice) + "], fn[" + String(fn) + "]");
+void eyesChoiceClock() {
+  eyesDrawDelayOff();
+  eyesDrawDelay(eye_up_center);
+  eyesDrawDelay(eye_up_right);
+  eyesDrawDelay(eye_right);
+  eyesDrawDelay(eye_down_right);
+  eyesDrawDelay(eye_down_center);
+  eyesDrawDelay(eye_down_left);
+  eyesDrawDelay(eye_left);
+  eyesDrawDelay(eye_up_left);
+  eyesDrawDelay(eye_up_center);
+  eyesDrawDelayOff();
+}
+
+void eyesChoiceTalk() {
+  int talkChoice = -1;
+  while (talkChoice == -1 || talkChoice == lastTalkChoice) {
+    talkChoice = random(13);
+  }
+  lastTalkChoice = talkChoice;
+  char* fn = soundFiles[talkChoice];
+  if (eyeDbg) Serial.println("Playing talkChoice[" + String(talkChoice) + "], fn[" + String(fn) + "]");
+  talkMode = true;
+  talkPlayed = false;
+  talkModeChecked = 0;
+  wait_talk = 0;
   player.playOne(fn);
-  playMode = true;
-  played = false;
+}
+
+void eyesTalkStep() {
+  if (eyeDbg) Serial.println("playing");
+  wait_talk--;
+  if (wait_talk < 1) {
+    int eyeSize = random(1000);
+    if (eyeSize > 0) {
+      eyeSize = 1;
+    }
+    if (lastTalk != eyeSize) {
+      if (eyeSize == 0) {
+        eyesOff();
+        wait_talk = random(2 * wait_eyes, 6 * wait_eyes);
+      } else {
+        eyesDraw(eye_center, 0, 0);
+        wait_talk = random(4 * wait_eyes, 10 * wait_eyes);
+      }
+      lastTalk = eyeSize;
+    }
+  }
+
+  talkPlayed = true;
+  player.play();
+}
+
+void eyesTalkCheck() {
+  String state = player.getPlayingState();
+    if (eyeDbg) Serial.println("state[" + state + "], talkPlayed[" + talkPlayed + "]");
+
+    if (talkPlayed && state != "1" && state != "3") {
+      talkModeChecked++;
+
+      eyesOff();
+
+      if (talkModeChecked > 20) {
+        if (eyeDbg) Serial.println("was playing but do not think so now, state[" + state + "]");
+        talkMode = false;
+        eyesWait(wait_events, wait_events);
+      }
+
+    } else {
+      eyesTalkStep();
+    }
 }
 
 void eyesRandom() {
-  int choice = random(3);
-  switch (choice) {
+  int eyeChoice = random(5);
+  switch (eyeChoice) {
     case 0:
-      eyesUp();
+      eyesChoiceUp();
       break;
     case 1:
-      eyesMiddle();
+      eyesChoiceMiddle();
       break;
     case 2:
-      eyesDown();
+      eyesChoiceDown();
       break;
     case 3:
-      eyesClock();
+      eyesChoiceClock();
+      break;
+    case 4:
+      eyesChoiceTalk();
       break;
   }
 }
 
 void loop() {
-  String state = player.getPlayingState();
-  if (playMode) {
-    if (played && state != "1" && state != "3") {
-      Serial.println("was playing but do not think so now, state[" + state + "]");
-      playMode = false;
-      eyesRandom();
-      eyesWait(1000,1000);
-    } else {
-      Serial.println("playing");
-      played = true;
-      player.play();
-    }
-    return;
+  // if talking, keep talking
+  if (talkMode) {
+    eyesTalkCheck();
+  } else {
+    eyesWait(wait_events, wait_events_multiplier * wait_events);
+    eyesRandom();
   }
-  
-  eyesTalk();
-  eyesWait(1000,1000);
 }
