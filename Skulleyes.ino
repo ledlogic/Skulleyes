@@ -194,11 +194,13 @@ void eyesUp() {
 }
 
 void eyesMiddle() {
+  eyesDraw(eye_off);
   eyesDraw(eye_left);
   eyesDraw(eye_center);
   eyesDraw(eye_right);
   eyesDraw(eye_center);
   eyesDraw(eye_left);
+  eyesDraw(eye_off);
 }
 
 void eyesDown() {
